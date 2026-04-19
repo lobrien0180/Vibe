@@ -283,6 +283,12 @@ function getPhaseDurationWeeks(phase, weeks = phase.weeks ?? []) {
     return phaseDuration
   }
 
+  const legacyWeekDuration = inferLegacyPhaseDurationWeeks(weeks)
+
+  if (legacyWeekDuration) {
+    return legacyWeekDuration
+  }
+
   return Math.max(weeks.length, 1)
 }
 
@@ -301,6 +307,19 @@ function getPhaseWeekTemplate(phase, phaseWeekIndex) {
 function toPositiveInteger(value) {
   const parsed = Number.parseInt(value, 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function inferLegacyPhaseDurationWeeks(weeks) {
+  if (weeks.length !== 1) {
+    return null
+  }
+
+  return parseWeekNumber(weeks[0]?.label)
+}
+
+function parseWeekNumber(value) {
+  const match = String(value ?? '').match(/week\s+(\d+)/i)
+  return match ? toPositiveInteger(match[1]) : null
 }
 
 function normalizeSavedWorkoutSessions(sessions, legacySavedWorkouts, program) {
@@ -392,7 +411,10 @@ function buildMovementHistoryEntries(program, session, historyKey) {
       sessionLabel: formatHistorySessionLabel(session),
       summary: session.workoutTitle,
       source: session.phaseName ?? 'Saved workout',
-      weights: formatHistoryWeights(record.entry?.setWeights),
+      setSummaries: formatHistorySetSummaries(
+        record.entry?.setWeights,
+        record.entry?.setReps,
+      ),
       notes: formatHistoryNotes(record.entry?.notes),
     }))
 }
@@ -486,9 +508,30 @@ function formatHistorySessionLabel(session) {
   return session.weekLabel ? `${formattedDate} · ${session.weekLabel}` : formattedDate
 }
 
-function formatHistoryWeights(weights) {
-  const normalizedWeights = (weights ?? []).map((weight) => String(weight).trim()).filter(Boolean)
-  return normalizedWeights.length ? normalizedWeights : ['No weight logged']
+function formatHistorySetSummaries(weights, reps) {
+  const totalSets = Math.max(weights?.length ?? 0, reps?.length ?? 0)
+  const setSummaries = []
+
+  for (let index = 0; index < totalSets; index += 1) {
+    const weight = String(weights?.[index] ?? '').trim()
+    const repCount = String(reps?.[index] ?? '').trim()
+
+    if (weight && repCount) {
+      setSummaries.push(`${weight}x${repCount}`)
+      continue
+    }
+
+    if (weight) {
+      setSummaries.push(weight)
+      continue
+    }
+
+    if (repCount) {
+      setSummaries.push(`x${repCount}`)
+    }
+  }
+
+  return setSummaries.length ? setSummaries : ['No sets logged']
 }
 
 function formatHistoryNotes(notes) {

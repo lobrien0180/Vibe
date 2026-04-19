@@ -36,8 +36,11 @@ function App() {
     saveAppState(appState)
   }, [appState])
 
-  const { activePhase, phaseLabel, weekLabel } = getProgramSummary(appState)
-  const currentWeek = getCurrentWeek(appState)
+  const previewWeekOffset = appState.storage?.previewWeekOffset ?? 0
+  const actualCurrentWeek = getCurrentWeek(appState)
+  const referenceDate = getPreviewReferenceDate(actualCurrentWeek, previewWeekOffset)
+  const { activePhase, phaseLabel, weekLabel } = getProgramSummary(appState, referenceDate)
+  const currentWeek = getCurrentWeek(appState, referenceDate)
   const selectedWorkout =
     getWorkoutById(currentWeek, selectedWorkoutId) ?? currentWeek?.workouts[0] ?? null
 
@@ -89,8 +92,13 @@ function App() {
             currentWeek={currentWeek}
             phaseLabel={phaseLabel}
             weekLabel={weekLabel}
+            previewWeekOffset={previewWeekOffset}
             onOpenWorkout={handleOpenWorkout}
             onOpenUpload={() => setCurrentScreen('upload')}
+            onAdvanceWeek={() =>
+              setAppState((current) => updatePreviewWeekOffset(current, previewWeekOffset + 1))
+            }
+            onResetPreview={() => setAppState((current) => updatePreviewWeekOffset(current, 0))}
           />
         ) : currentScreen === 'upload' ? (
           <UploadProgramScreen
@@ -128,14 +136,35 @@ function HomeScreen({
   currentWeek,
   phaseLabel,
   weekLabel,
+  previewWeekOffset,
   onOpenWorkout,
   onOpenUpload,
+  onAdvanceWeek,
+  onResetPreview,
 }) {
   return (
     <>
       <ScreenHeader title="Workout Plan" subtitle={`${phaseLabel} · ${weekLabel}`} />
 
       <section className="stack">
+        <Card
+          title="Schedule Preview"
+          subtitle={
+            previewWeekOffset
+              ? `Previewing ${formatPreviewOffset(previewWeekOffset)} from today so you can inspect future history.`
+              : 'Move forward a week locally to inspect how next week and exercise history will look.'
+          }
+        >
+          <div className="preview-controls">
+            <Button variant="ghost" onClick={onAdvanceWeek}>
+              Next Week
+            </Button>
+            <Button disabled={!previewWeekOffset} onClick={onResetPreview}>
+              Reset to Today
+            </Button>
+          </div>
+        </Card>
+
         <Card title="This Week's Workouts">
           {currentWeek?.workouts?.length ? (
             <div className="workout-list" role="list">
@@ -363,7 +392,7 @@ function WorkoutScreen({
                               </div>
                               <Badge variant="muted">{entry.source}</Badge>
                             </div>
-                            <p className="history-weights">{entry.weights.join(' · ')}</p>
+                            <p className="history-weights">{entry.setSummaries.join('  ')}</p>
                             <p className="history-notes">{entry.notes}</p>
                           </article>
                         ))}
@@ -543,6 +572,30 @@ function getWorkoutStatusVariant(status) {
   }
 
   return 'muted'
+}
+
+function updatePreviewWeekOffset(state, previewWeekOffset) {
+  return {
+    ...state,
+    storage: {
+      ...state.storage,
+      previewWeekOffset: Math.max(0, previewWeekOffset),
+    },
+  }
+}
+
+function getPreviewReferenceDate(baseWeek, previewWeekOffset) {
+  if (!previewWeekOffset || !baseWeek?.startDate) {
+    return new Date()
+  }
+
+  const date = new Date(`${baseWeek.startDate}T12:00:00`)
+  date.setDate(date.getDate() + Math.max(0, previewWeekOffset) * 7)
+  return date
+}
+
+function formatPreviewOffset(previewWeekOffset) {
+  return previewWeekOffset === 1 ? '1 week ahead' : `${previewWeekOffset} weeks ahead`
 }
 
 function validateProgramUpload(program) {
