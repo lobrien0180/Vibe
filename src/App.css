@@ -221,6 +221,16 @@
   border: 1px solid #e5e7eb;
 }
 
+.button-slate {
+  color: #ffffff;
+  background: linear-gradient(180deg, #8791a1 0%, #6b7280 100%);
+  box-shadow: 0 10px 24px rgba(107, 114, 128, 0.18);
+}
+
+.button-slate:hover {
+  background: linear-gradient(180deg, #939dac 0%, #76808f 100%);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

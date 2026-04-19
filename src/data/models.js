@@ -74,6 +74,22 @@ export function getCurrentWeek(appState, referenceDate = new Date()) {
   return getCurrentScheduleEntry(appState, referenceDate)?.week ?? null
 }
 
+export function getScheduledWeeksThroughCurrentWeek(appState, referenceDate = new Date()) {
+  const schedule = buildProgramSchedule(appState.program, appState.activeWorkoutStatuses)
+
+  if (!schedule.length) {
+    return []
+  }
+
+  const weekIndex = getElapsedProgramWeekIndex(
+    appState.program.programStartDate,
+    referenceDate,
+    schedule.length,
+  )
+
+  return schedule.slice(0, weekIndex + 1)
+}
+
 export function getProgramSummary(appState, referenceDate = new Date()) {
   const activePhase = getCurrentPhase(appState, referenceDate)
   const currentWeek = getCurrentWeek(appState, referenceDate)

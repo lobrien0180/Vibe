@@ -9,6 +9,7 @@ import {
   createInitialAppState,
   getCurrentWeek,
   getMovementHistory,
+  getScheduledWeeksThroughCurrentWeek,
   hydrateAppState,
   getProgramSummary,
   getWorkoutById,
@@ -89,16 +90,19 @@ function App() {
       <main className="app-frame">
         {currentScreen === 'home' ? (
           <HomeScreen
+            appState={appState}
             currentWeek={currentWeek}
             phaseLabel={phaseLabel}
             weekLabel={weekLabel}
             previewWeekOffset={previewWeekOffset}
+            referenceDate={referenceDate}
             onOpenWorkout={handleOpenWorkout}
             onOpenUpload={() => setCurrentScreen('upload')}
             onAdvanceWeek={() =>
               setAppState((current) => updatePreviewWeekOffset(current, previewWeekOffset + 1))
             }
             onResetPreview={() => setAppState((current) => updatePreviewWeekOffset(current, 0))}
+            onExportWorkouts={() => handleExportWorkouts(appState, referenceDate)}
           />
         ) : currentScreen === 'upload' ? (
           <UploadProgramScreen
@@ -133,15 +137,22 @@ function App() {
 }
 
 function HomeScreen({
+  appState,
   currentWeek,
   phaseLabel,
   weekLabel,
   previewWeekOffset,
+  referenceDate,
   onOpenWorkout,
   onOpenUpload,
   onAdvanceWeek,
+  onExportWorkouts,
   onResetPreview,
 }) {
+  const hasWeeksToExport =
+    getScheduledWeeksThroughCurrentWeek(appState, referenceDate).length > 0 &&
+    Boolean(currentWeek?.workouts?.length)
+
   return (
     <>
       <ScreenHeader title="Workout Plan" subtitle={`${phaseLabel} · ${weekLabel}`} />
@@ -187,6 +198,15 @@ function HomeScreen({
             </div>
           )}
         </Card>
+
+        <Button
+          className="full-width-button"
+          disabled={!hasWeeksToExport}
+          variant="slate"
+          onClick={onExportWorkouts}
+        >
+          Export workouts
+        </Button>
 
         <Button className="full-width-button" variant="ghost" onClick={onOpenUpload}>
           Upload new program
@@ -572,6 +592,117 @@ function getWorkoutStatusVariant(status) {
   }
 
   return 'muted'
+}
+
+function handleExportWorkouts(appState, referenceDate) {
+  const rows = buildWorkoutExportRows(appState, referenceDate)
+
+  if (!rows.length || typeof window === 'undefined') {
+    return
+  }
+
+  const csv = toCsv([
+    [
+      'Program',
+      'Phase',
+      'Week',
+      'Workout Name',
+      'Workout Status',
+      'Completed At',
+      'Block',
+      'Movement/ Exercise',
+      'Sets',
+      'Programmed Reps',
+      'Tempo',
+      'Rest',
+      'Logged Weights',
+      'Logged Reps',
+      'Movement Notes',
+    ],
+    ...rows,
+  ])
+
+  const fileName = createWorkoutExportFileName(appState.program.name, referenceDate)
+  downloadCsvFile(csv, fileName)
+}
+
+function buildWorkoutExportRows(appState, referenceDate) {
+  return getScheduledWeeksThroughCurrentWeek(appState, referenceDate).flatMap(({ phase, week }) =>
+    week.workouts.flatMap((workout) => {
+      const savedSession = getLatestSavedWorkoutSession(appState, workout)
+
+      return workout.movements.map((movement) => {
+        const movementEntry = savedSession?.movementEntries?.[movement.id]
+
+        return [
+          appState.program.name,
+          phase.name,
+          week.label,
+          workout.title,
+          workout.status,
+          savedSession?.completedAt ?? '',
+          movement.block ?? '',
+          movement.title,
+          String(movement.prescription.sets),
+          movement.prescription.reps,
+          movement.prescription.tempo,
+          movement.prescription.rest,
+          formatExportSetValues(movementEntry?.setWeights),
+          formatExportSetValues(movementEntry?.setReps),
+          String(movementEntry?.notes ?? '').trim(),
+        ]
+      })
+    }),
+  )
+}
+
+function formatExportSetValues(values) {
+  return (values ?? [])
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean)
+    .join(' | ')
+}
+
+function toCsv(rows) {
+  return rows
+    .map((row) =>
+      row
+        .map((value) => {
+          const normalized = String(value ?? '')
+          const escaped = normalized.replace(/"/g, '""')
+          return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped
+        })
+        .join(','),
+    )
+    .join('\n')
+}
+
+function createWorkoutExportFileName(programName, referenceDate) {
+  const safeProgramName = String(programName ?? 'workouts')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  const date = new Date(referenceDate)
+  const formattedDate = Number.isNaN(date.getTime())
+    ? new Date().toISOString().slice(0, 10)
+    : date.toISOString().slice(0, 10)
+
+  return `${safeProgramName || 'workouts'}-through-${formattedDate}.csv`
+}
+
+function downloadCsvFile(csv, fileName) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const link = window.document.createElement('a')
+
+  link.href = url
+  link.download = fileName
+  link.style.display = 'none'
+  window.document.body.append(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
 }
 
 function updatePreviewWeekOffset(state, previewWeekOffset) {
