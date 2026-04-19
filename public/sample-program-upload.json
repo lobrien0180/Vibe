@@ -1,0 +1,109 @@
+{
+  "name": "Spring Strength Block",
+  "activePhaseId": "phase-4",
+  "phases": [
+    {
+      "id": "phase-4",
+      "name": "Phase 4",
+      "startDate": "2026-04-01",
+      "weeks": [
+        {
+          "id": "phase-4-week-1",
+          "label": "Week 1",
+          "startDate": "2026-04-01",
+          "workouts": [
+            {
+              "title": "Lower Strength",
+              "movements": [
+                {
+                  "title": "Back Squat",
+                  "category": "Primary Lift",
+                  "prescription": {
+                    "sets": 4,
+                    "reps": "5",
+                    "tempo": "31X1",
+                    "rest": "2 min"
+                  }
+                },
+                {
+                  "title": "Split Squat",
+                  "category": "Accessory",
+                  "prescription": {
+                    "sets": 3,
+                    "reps": "8",
+                    "tempo": "2111",
+                    "rest": "75 sec"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "phase-4-week-2",
+          "label": "Week 2",
+          "startDate": "2026-04-08",
+          "workouts": [
+            {
+              "title": "Upper Strength",
+              "movements": [
+                {
+                  "title": "Bench Press",
+                  "category": "Primary Lift",
+                  "prescription": {
+                    "sets": 4,
+                    "reps": "4",
+                    "tempo": "21X1",
+                    "rest": "2 min"
+                  }
+                },
+                {
+                  "title": "Chest Supported Row",
+                  "category": "Accessory",
+                  "prescription": {
+                    "sets": 3,
+                    "reps": "10",
+                    "tempo": "2111",
+                    "rest": "60 sec"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "phase-4-week-3",
+          "label": "Week 3",
+          "startDate": "2026-04-15",
+          "workouts": [
+            {
+              "title": "Full Body Strength",
+              "movements": [
+                {
+                  "title": "Front Squat",
+                  "category": "Primary Lift",
+                  "prescription": {
+                    "sets": 4,
+                    "reps": "4",
+                    "tempo": "30X1",
+                    "rest": "2 min"
+                  }
+                },
+                {
+                  "title": "Pull-Up",
+                  "category": "Bodyweight",
+                  "prescription": {
+                    "sets": 3,
+                    "reps": "8",
+                    "tempo": "20X1",
+                    "rest": "90 sec"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

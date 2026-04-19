@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'fitness-tracker-app-state'
+const STORAGE_KEY = 'fitness-tracker-app-state-v2'
 
 export function loadAppState(fallbackState) {
   if (typeof window === 'undefined') {

@@ -70,6 +70,12 @@
   gap: 1rem;
 }
 
+.upload-stack,
+.empty-state {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .card {
   border-radius: 1.5rem;
   padding: 1rem;
@@ -92,20 +98,47 @@
   margin-bottom: 0.3rem;
 }
 
-.hero-copy {
+.upload-field {
   display: grid;
   gap: 0.5rem;
 }
 
-.hero-copy h2 {
-  font-size: 1.7rem;
+.upload-field span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #374151;
 }
 
-.hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.625rem;
-  margin-top: 1rem;
+.upload-field input[type='file'] {
+  width: 100%;
+  border: 1px dashed #f9a8d4;
+  border-radius: 1rem;
+  background: #fff7fb;
+  color: #111827;
+  padding: 0.9rem 1rem;
+  font: inherit;
+}
+
+.upload-message {
+  font-size: 0.92rem;
+}
+
+.upload-helper {
+  font-size: 0.92rem;
+  color: #6b7280;
+}
+
+.upload-helper a {
+  color: #db2777;
+  font-weight: 700;
+}
+
+.upload-message-success {
+  color: #166534;
+}
+
+.upload-message-error {
+  color: #b91c1c;
 }
 
 .workout-list,
@@ -135,7 +168,6 @@
   gap: 0.75rem;
 }
 
-.movement-category,
 .movement-tempo,
 .history-notes,
 .history-date {
@@ -171,6 +203,10 @@
   color: #ffffff;
   background: linear-gradient(135deg, #f72585, #ff5ea8);
   box-shadow: 0 10px 24px rgba(247, 37, 133, 0.28);
+}
+
+.full-width-button {
+  width: 100%;
 }
 
 .button-ghost {
@@ -221,7 +257,28 @@
   gap: 1rem;
 }
 
+.movement-heading > div {
+  display: grid;
+  align-content: start;
+  flex: 1;
+  min-width: 0;
+}
+
+.movement-heading h3,
 .movement-heading p {
+  margin: 0;
+}
+
+.movement-heading h3 {
+  overflow-wrap: anywhere;
+}
+
+.movement-heading .badge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.movement-tempo {
   margin-top: 0.25rem;
 }
 
@@ -369,6 +426,10 @@
   padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, rgba(248, 250, 252, 0.2), rgba(248, 250, 252, 0.95) 26%);
   backdrop-filter: blur(12px);
+}
+
+.sticky-footer-single {
+  grid-template-columns: 1fr;
 }
 
 .bullet-list {

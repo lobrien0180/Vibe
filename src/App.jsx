@@ -8,10 +8,13 @@ import {
   buildEmptyMovementEntry,
   createInitialAppState,
   getCurrentWeek,
+  getProgramSummary,
   getWorkoutById,
+  replaceProgram,
   updateWorkoutStatus,
 } from './data/models'
 import { sampleProgram } from './data/sampleProgram'
+import { parseWorkoutCsv } from './data/workoutCsv'
 import { loadAppState, saveAppState } from './lib/storage'
 
 const initialState = createInitialAppState(sampleProgram)
@@ -20,18 +23,56 @@ function App() {
   const [appState, setAppState] = useState(() => loadAppState(initialState))
   const [currentScreen, setCurrentScreen] = useState('home')
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null)
+  const [uploadState, setUploadState] = useState({
+    status: 'idle',
+    message: 'Upload a CSV program file to replace the active plan.',
+  })
 
   useEffect(() => {
     saveAppState(appState)
   }, [appState])
 
+  const { phaseLabel, weekLabel } = getProgramSummary(appState)
   const currentWeek = getCurrentWeek(appState)
   const selectedWorkout =
-    getWorkoutById(currentWeek, selectedWorkoutId) ?? currentWeek.workouts[0] ?? null
+    getWorkoutById(currentWeek, selectedWorkoutId) ?? currentWeek?.workouts[0] ?? null
 
   function handleOpenWorkout(workoutId) {
     setSelectedWorkoutId(workoutId)
     setCurrentScreen('workout')
+  }
+
+  async function handleProgramUpload(event) {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    try {
+      const raw = await file.text()
+      const parsed = parseWorkoutCsv(raw, { fileName: file.name })
+
+      validateProgramUpload(parsed)
+
+      setAppState((current) => replaceProgram(current, parsed))
+      setSelectedWorkoutId(null)
+      setCurrentScreen('home')
+      setUploadState({
+        status: 'success',
+        message: `Loaded ${parsed.name ?? 'new program'} from ${file.name}.`,
+      })
+    } catch (error) {
+      setUploadState({
+        status: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unable to read that program file. Please upload valid CSV.',
+      })
+    } finally {
+      event.target.value = ''
+    }
   }
 
   return (
@@ -40,7 +81,19 @@ function App() {
 
       <main className="app-frame">
         {currentScreen === 'home' ? (
-          <HomeScreen currentWeek={currentWeek} onOpenWorkout={handleOpenWorkout} />
+          <HomeScreen
+            currentWeek={currentWeek}
+            phaseLabel={phaseLabel}
+            weekLabel={weekLabel}
+            onOpenWorkout={handleOpenWorkout}
+            onOpenUpload={() => setCurrentScreen('upload')}
+          />
+        ) : currentScreen === 'upload' ? (
+          <UploadProgramScreen
+            uploadState={uploadState}
+            onBack={() => setCurrentScreen('home')}
+            onUploadProgram={handleProgramUpload}
+          />
         ) : (
           <WorkoutScreen
             key={selectedWorkout?.id ?? 'no-workout'}
@@ -64,33 +117,84 @@ function App() {
   )
 }
 
-function HomeScreen({ currentWeek, onOpenWorkout }) {
+function HomeScreen({
+  currentWeek,
+  phaseLabel,
+  weekLabel,
+  onOpenWorkout,
+  onOpenUpload,
+}) {
   return (
     <>
-      <ScreenHeader title="Workout Plan" subtitle="Phase 3 · Week 3" />
+      <ScreenHeader title="Workout Plan" subtitle={`${phaseLabel} · ${weekLabel}`} />
 
       <section className="stack">
         <Card title="This Week's Workouts">
-          <div className="workout-list" role="list">
-            {currentWeek.workouts.map((workout) => (
-              <article className="workout-row" key={workout.id} role="listitem">
-                <div>
-                  <h3>{workout.title}</h3>
-                </div>
+          {currentWeek?.workouts?.length ? (
+            <div className="workout-list" role="list">
+              {currentWeek.workouts.map((workout) => (
+                <article className="workout-row" key={workout.id} role="listitem">
+                  <div>
+                    <h3>{workout.title}</h3>
+                  </div>
 
-                <div className="workout-actions">
-                  <Badge variant={workout.status === 'complete' ? 'success' : 'muted'}>
-                    {workout.status}
-                  </Badge>
-                  <Button onClick={() => onOpenWorkout(workout.id)}>
-                    {workout.status === 'complete' ? 'Review' : 'Open'}
-                  </Button>
-                </div>
-              </article>
-            ))}
+                  <div className="workout-actions">
+                    <Badge variant={workout.status === 'complete' ? 'success' : 'muted'}>
+                      {workout.status}
+                    </Badge>
+                    <Button onClick={() => onOpenWorkout(workout.id)}>
+                      {workout.status === 'complete' ? 'Review' : 'Open'}
+                    </Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No workouts found for the current week. Upload a program to get started.</p>
+            </div>
+          )}
+        </Card>
+
+        <Button className="full-width-button" variant="ghost" onClick={onOpenUpload}>
+          Upload new program
+        </Button>
+      </section>
+    </>
+  )
+}
+
+function UploadProgramScreen({ uploadState, onBack, onUploadProgram }) {
+  return (
+    <>
+      <ScreenHeader title="Upload Program" subtitle="Replace the active plan with a CSV file" />
+
+      <section className="stack">
+        <Card subtitle="Uploading a new file replaces the active program while keeping saved workout history">
+          <div className="upload-stack">
+            <label className="upload-field">
+              <span>Select program file</span>
+              <input accept=".csv,text/csv" type="file" onChange={onUploadProgram} />
+            </label>
+            <p className="upload-helper">
+              Need a template? Use{' '}
+              <a href="/sample-program-upload.csv" target="_blank" rel="noreferrer">
+                the sample upload file
+              </a>
+              .
+            </p>
+            <p className={`upload-message upload-message-${uploadState.status}`}>
+              {uploadState.message}
+            </p>
           </div>
         </Card>
       </section>
+
+      <div className="sticky-footer sticky-footer-single">
+        <Button variant="ghost" onClick={onBack}>
+          Back to Home
+        </Button>
+      </div>
     </>
   )
 }
@@ -105,7 +209,7 @@ function WorkoutScreen({
 }) {
   const [openHistoryByMovement, setOpenHistoryByMovement] = useState({})
 
-  if (!workout) {
+  if (!workout || !currentWeek) {
     return (
       <>
         <ScreenHeader
@@ -139,8 +243,10 @@ function WorkoutScreen({
                 <div className="movement-detail">
                   <div className="movement-heading">
                     <div>
-                      <p className="movement-category">{movement.category}</p>
-                      <h3>{movement.title}</h3>
+                      <h3>
+                        {movement.block ? `${movement.block}) ` : ''}
+                        {movement.title}
+                      </h3>
                       <p className="movement-tempo">Tempo {movement.prescription.tempo}</p>
                     </div>
                     <Badge>{movement.prescription.sets} sets</Badge>
@@ -188,8 +294,9 @@ function WorkoutScreen({
                               autoComplete="off"
                               inputMode="numeric"
                               pattern="[0-9]*"
+                              placeholder={movement.prescription.reps}
                               type="text"
-                              value={movementEntry.setReps[index] ?? movement.prescription.reps}
+                              value={movementEntry.setReps[index] ?? ''}
                               onChange={(event) =>
                                 onChangeMovementEntry(movement.id, {
                                   ...movementEntry,
@@ -367,6 +474,24 @@ function sanitizeDecimalInput(value) {
 
 function sanitizeIntegerInput(value) {
   return value.replace(/\D/g, '')
+}
+
+function validateProgramUpload(program) {
+  if (!program || typeof program !== 'object') {
+    throw new Error('That file does not contain a valid program object.')
+  }
+
+  if (!Array.isArray(program.phases) || program.phases.length === 0) {
+    throw new Error('Uploaded program must include at least one phase.')
+  }
+
+  const hasAtLeastOneWeek = program.phases.some(
+    (phase) => Array.isArray(phase.weeks) && phase.weeks.length > 0,
+  )
+
+  if (!hasAtLeastOneWeek) {
+    throw new Error('Uploaded program must include at least one week.')
+  }
 }
 
 export default App

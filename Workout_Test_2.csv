@@ -1,0 +1,109 @@
+﻿Phase,Phase weeks,Workout Name,Block,Movement/ Exercise,Sets,Reps,Tempo,Rest
+1,4,Lower 1,A,BB Low Bar Squat,3,"5,4,3",4010,3:00
+1,4,Lower 1,B1,DB Lunges Forward Step - Alternating,3,5-7,2010,1:30
+1,4,Lower 1,B2,Smith Machine Hip Thrust,3,6-8,2010,1:30
+1,4,Lower 1,C,Back Extension - DB On Chest,3,6-8,3010,1:30
+1,4,Lower 1,D,90* Cable Standing Straight Leg Abduction,3,8-10,2012,1:00
+1,4,Lower 1,E,Decline Bench Lying Leg Raises,3,6-8,2010,1:00
+1,4,Upper 1,A1,BB Seated Shoulder Press,3,"5,4,3",3010,1:30
+1,4,Upper 1,A2,Pull-ups - Neutal  Grip,3,"3,2,1",2011,1:30
+1,4,Upper 1,B1,DB Lateral Raise,3,6-8,2010,2:00
+1,4,Upper 1,B2,Machine Seated Row - Pronated,3,6-8,2010,2:00
+1,4,Upper 1,C,Push-up,3,MAX,3010,1:30
+1,4,Upper 1,D1,BB Bicep Curl,3,6-8,3010,0:15
+1,4,Upper 1,D2,DB Lying Tricep Extension,3,6-8,4010,1:30
+1,4,Lower 2,A,BB Conventional Deadlift,3,4,2210,2:00
+1,4,Lower 2,B1,Seated Leg Curl,3,5-7,2210,1:15
+1,4,Lower 2,B2,DB Bulgarian Split Squat,3,6-8,2010,1:15
+1,4,Lower 2,C,BB Glute Bridge,3,8-10,2210,2:00
+1,4,Lower 2,D,Leg Extension - Paused,3,10-12,2011,1:15
+1,4,Upper 2,A1,30* DB Bench Press - Neutral Grip,3,5-7,3010,1:15
+1,4,Upper 2,A2,DB One Arm Row,3,"7,6,5",2110,1:15
+1,4,Upper 2,B,Machine Shoulder Press,3,"10,8,6",2010,1:30
+1,4,Upper 2,C,Lat Pulldown - Supinated Grip,3,"10,8,6",2010,1:30
+1,4,Upper 2,D,Cable Lateral Raise - Single Arm - Low Pulley,3,8-10,2010,1:30
+1,4,Upper 2,E1,Cable Rope Overhead Tricep Extension,2,10-12,2110,0:15
+1,4,Upper 2,E2,Cable Rope Bicep Curl,2,10-12,2010,1:30
+2,4,Lower 1,A,Hack Squat,3,6-8,3010,2:30
+2,4,Lower 1,B1,Lying Leg Curl,3,6-8,3010,0:30
+2,4,Lower 1,B2,DB Stiff Legged Deadlift,3,10-12,2010,2:30
+2,4,Lower 1,C,BB Hip Thrust - Paused,3,10-12,2011,2:00
+2,4,Lower 1,D1,Seated Abductor Machine,2,8-10,2010,0:10
+2,4,Lower 1,D2,Seated Abductor Machine - Forward Seated,2,8-10,2010,2:00
+2,4,Lower 1,E,Hanging Knee Raise,3,MAX,2010,1:00
+2,4,Upper 1,A1,Machine Shoulder Press,3,7-9,2210,0:30
+2,4,Upper 1,A2,DB Lateral Raise,3,7-9,2010,2:00
+2,4,Upper 1,B1,DB Bentover Row - Pronated,3,7-9,2010,0:30
+2,4,Upper 1,B2,Rope Straight Arm Pulldown,3,13-15,2010,2:00
+2,4,Upper 1,C,30* DB Reverse Fly - Pronated,3,"15,12,10",2010,1:15
+2,4,Upper 1,D1,45* DB Incline DB Supinated Curl ,3,10-12,2010,0:30
+2,4,Upper 1,D2,BB Skull Crusher,3,10-12,2010,1:30
+2,4,Lower 2,A,Trap Bar Deficit Deadlift,3,6-8,2210,3:00
+2,4,Lower 2,B1,DB Front Foot Elevated Split Squat,3,6-8,3010,0:30
+2,4,Lower 2,B2,Leg Extension,3,10-12,2010,3:00
+2,4,Lower 2,C,Back Extension - DB On Chest,3,10-12,2011,2:00
+2,4,Lower 2,D,Cable Kickback,3,10-12,2010,1:30
+2,4,Lower 2,E1,V-Sits,3,"15,12,10",2010,0:15
+2,4,Lower 2,E2,Moving (Commando) Plank,3,30sec,1010,1:00
+2,4,Upper 2,A1,DB Standing Arnold Press,3,7-9,3010,0:30
+2,4,Upper 2,A2,DB Lateral Raise - One Arm,3,13-15,2010,1:30
+2,4,Upper 2,B1,Lat Pulldown - Supinated Grip,3,6-8,2011,0:30
+2,4,Upper 2,B2,Lat Pulldown - Wide - Lean Away,3,10-12,2010,2:30
+2,4,Upper 2,C,45* DB Y Raise Prone,3,"15,12,10",2010,1:30
+2,4,Upper 2,D1,Cable Rope Overhead Tricep Extension,3,"15,12,10",2010,0:15
+2,4,Upper 2,D2,Cable Rope Hammer Curl,3,"15,12,10",2010,1:15
+3,4,Lower 1,A1,BB High  Bar Squat ,4,"7,6,5,7",2010,1:30
+3,4,Lower 1,A2,Lying Leg Curl,4,"7,6,5,7",2010,1:30
+3,4,Lower 1,B,DB MC Glute Lunge,2,"8,6",2010,2:00
+3,4,Lower 1,C,DB Stiff Legged Deadlift,2,"8,6",3010,2:00
+3,4,Lower 1,D,Machine Kas Glute Bridge,3,"12,10,8",2010,1:30
+3,4,Upper 1,A1,30* DB Bench Press - Neutral Grip,3,"8,7,6",3010,1:30
+3,4,Upper 1,A2,DB One Arm Row - Dead Stop,3,"8,7,6",2110,1:30
+3,4,Upper 1,B,30* Side Lying DB Lateral Raise - One Arm,3,8,2110,1:30
+3,4,Upper 1,C,Cable Row Seated - Straight Bar - Pronated Grip,3,8,2010,1:30
+3,4,Upper 1,D,Machine Shoulder Press,2,8-10,2010,1:30
+3,4,Upper 1,E1,BB Bicep Curl,3,8-10,2010,1:00
+3,4,Upper 1,E2,DB Lying Tricep Extension,3,8-10,2010,1:00
+3,4,Lower 2,A,Trap Bar Deficit Deadlift,4,"7,6,5,7",2110,2:30
+3,4,Lower 2,B1,DB Front Foot Elevated Split Squat - 1&1/4 Rep,3,6,3010,1:15
+3,4,Lower 2,B2,Seated Leg Curl,3,5-7,2010,1:15
+3,4,Lower 2,C,Seated Abductor Machine - Forward Seated,2,8-10,2010,1:30
+3,4,Lower 2,D,Cable Kickback - Paused,2,8-10,2011,1:30
+3,4,Lower 2,E1,Decline Bench Reverse Crunch,3,8-10,2010,0:20
+3,4,Lower 2,E2,Decline Bench Crunch,3,8-10,2010,1:00
+3,4,Upper 2,A1,BB Seated Shoulder Press,3,"8,7,6",3010,1:30
+3,4,Upper 2,A2,Pull-ups - Supinated Grip,3,3-5,2010,1:30
+3,4,Upper 2,B1,DB Bench Press - Pronated Grip,2,8-10,2110,1:00
+3,4,Upper 2,B2,DB Lateral Raise - Seated - Forward Bentover,2,8-10,2010,1:00
+3,4,Upper 2,C,65* DB  Lateral Raise,2,8-10,2010,1:30
+3,4,Upper 2,D,Cable Kneeling One Arm Row Row - Pronated,3,7-9,2010,1:30
+3,4,Upper 2,E1,Cable Straight Bar Bicep Curl,2,8-10,2010,0:45
+3,4,Upper 2,E2,Cable Straight Bar Tricep Pushdown,2,8-10,2010,0:45
+4,4,Lower 1,A,Leg Extension,3,"15,12,10",2010,1:30
+4,4,Lower 1,B,Smith Machine Squat,4,6-8,2110,3:00
+4,4,Lower 1,C,BB Hip Thrust - B Stance,3,6-8,2010,2:00
+4,4,Lower 1,D,DB Stiff Legged Deadlift,2,10-12,3010,1:30
+4,4,Lower 1,E,30* Angle Cable Glute Medius Kickback,3,10-12,2010,1:00
+4,4,Lower 1,F,DB Calf Raise,2,10-12,2210,1:15
+4,4,Upper 1,A1,DB Lateral Raise,3,13-15,2010,0:20
+4,4,Upper 1,A2,Machine Shoulder Press,3,6-8,2210,2:00
+4,4,Upper 1,B1,Rope Straight Arm Pulldown,3,13-15,2010,0:20
+4,4,Upper 1,B2,Cable Row Seated Wide Supinated Grip,3,6-8,2010,2:00
+4,4,Upper 1,C,Reverse Pec Dec - Single Arm,2,10-12,2010,1:15
+4,4,Upper 1,D1,Cable Rope Bicep Curl,3,10-12,2010,0:15
+4,4,Upper 1,D2,Rope Tricep Pushdowns,3,10-12,2010,1:15
+4,4,Lower 2,A,Seated Leg Curl,5,"15,12,10",2010,1:30
+4,4,Lower 2,B,BB Deficit Deadlift,4,6-8,2110,3:00
+4,4,Lower 2,C,Leg Press Feet Low,3,8-10,2010,2:00
+4,4,Lower 2,D,Machine Kas Glute Bridge,3,"15,12,10",2010,1:30
+4,4,Lower 2,E,Lying Leg Curl - Single Leg,2,8-10,2010,1:30
+4,4,Lower 2,F1,Hanging Knee Raise,3,8-10,2010,0:10
+4,4,Lower 2,F2,Bicycle Crunches,3,12-15,1010,1:30
+4,4,Upper 2,A1,45* DB Y Raise Prone,3,13-15,2010,0:20
+4,4,Upper 2,A2,45* Incline DB Bench Press - Neutral Grip,3,6-8,2110,2:00
+4,4,Upper 2,B,Lat Pulldown - Mid-Pronated Grip,3,13-15,2010,1:30
+4,4,Upper 2,C,BB Bentover Row Supinated Grip,3,6-8,2010,2:00
+4,4,Upper 2,D,Cable Lateral Raise - Low Pulley,2,10-12,2010,1:30
+4,4,Upper 2,E,Cable Rope Face Pull - Paused,2,10-12,2012,1:30
+4,4,Upper 2,F1,45* DB Incline DB Supinated Curl ,2,8-10,2010,1:30
+4,4,Upper 2,F2,Push-up,2,MAX,2010,1:30
