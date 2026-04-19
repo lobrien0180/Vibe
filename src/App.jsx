@@ -8,6 +8,8 @@ import {
   buildEmptyMovementEntry,
   createInitialAppState,
   getCurrentWeek,
+  getMovementHistory,
+  hydrateAppState,
   getProgramSummary,
   getWorkoutById,
   replaceProgram,
@@ -20,7 +22,9 @@ import { loadAppState, saveAppState } from './lib/storage'
 const initialState = createInitialAppState(sampleProgram)
 
 function App() {
-  const [appState, setAppState] = useState(() => loadAppState(initialState))
+  const [appState, setAppState] = useState(() =>
+    hydrateAppState(loadAppState(initialState), initialState),
+  )
   const [currentScreen, setCurrentScreen] = useState('home')
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(null)
   const [uploadState, setUploadState] = useState({
@@ -32,7 +36,7 @@ function App() {
     saveAppState(appState)
   }, [appState])
 
-  const { phaseLabel, weekLabel } = getProgramSummary(appState)
+  const { activePhase, phaseLabel, weekLabel } = getProgramSummary(appState)
   const currentWeek = getCurrentWeek(appState)
   const selectedWorkout =
     getWorkoutById(currentWeek, selectedWorkoutId) ?? currentWeek?.workouts[0] ?? null
@@ -98,6 +102,7 @@ function App() {
           <WorkoutScreen
             key={selectedWorkout?.id ?? 'no-workout'}
             appState={appState}
+            activePhase={activePhase}
             currentWeek={currentWeek}
             workout={selectedWorkout}
             onChangeMovementEntry={(movementId, nextEntry) =>
@@ -106,7 +111,9 @@ function App() {
               )
             }
             onSaveWorkout={() => {
-              setAppState((current) => saveWorkout(current, selectedWorkout))
+              setAppState((current) =>
+                saveWorkout(current, selectedWorkout, activePhase, currentWeek),
+              )
               setCurrentScreen('home')
             }}
             onBack={() => setCurrentScreen('home')}
@@ -139,12 +146,8 @@ function HomeScreen({
                   </div>
 
                   <div className="workout-actions">
-                    <Badge variant={workout.status === 'complete' ? 'success' : 'muted'}>
-                      {workout.status}
-                    </Badge>
-                    <Button onClick={() => onOpenWorkout(workout.id)}>
-                      {workout.status === 'complete' ? 'Review' : 'Open'}
-                    </Button>
+                    <Badge variant={getWorkoutStatusVariant(workout.status)}>{workout.status}</Badge>
+                    <Button onClick={() => onOpenWorkout(workout.id)}>Open</Button>
                   </div>
                 </article>
               ))}
@@ -201,6 +204,7 @@ function UploadProgramScreen({ uploadState, onBack, onUploadProgram }) {
 
 function WorkoutScreen({
   appState,
+  activePhase,
   currentWeek,
   workout,
   onBack,
@@ -227,9 +231,9 @@ function WorkoutScreen({
   return (
     <>
       <ScreenHeader
-        eyebrow={currentWeek.label}
         title={workout.title}
-        actions={<Badge variant="muted">{workout.status}</Badge>}
+        subtitle={currentWeek.label}
+        actions={<Badge variant={getWorkoutStatusVariant(workout.status)}>{workout.status}</Badge>}
       />
 
       <section className="stack">
@@ -237,6 +241,7 @@ function WorkoutScreen({
           {workout.movements.map((movement) => {
             const showHistory = Boolean(openHistoryByMovement[movement.id])
             const movementEntry = getMovementEntry(appState, workout, movement)
+            const movementHistory = getMovementHistory(appState, movement, activePhase?.id)
 
             return (
               <Card key={movement.id}>
@@ -249,7 +254,7 @@ function WorkoutScreen({
                       </h3>
                       <p className="movement-tempo">Tempo {movement.prescription.tempo}</p>
                     </div>
-                    <Badge>{movement.prescription.sets} sets</Badge>
+                    <Badge>Sets {movement.prescription.sets}</Badge>
                   </div>
 
                   <div className="set-list">
@@ -347,9 +352,9 @@ function WorkoutScreen({
                   </button>
 
                   {showHistory ? (
-                    movement.previousPerformance?.length ? (
+                    movementHistory.length ? (
                       <div className="history-list">
-                        {movement.previousPerformance.map((entry) => (
+                        {movementHistory.map((entry) => (
                           <article className="history-card" key={entry.id}>
                             <div className="history-card-header">
                               <div>
@@ -391,7 +396,8 @@ function WorkoutScreen({
 
 function getMovementEntry(appState, workout, movement) {
   const draftEntry = appState.workoutDrafts?.[workout.id]?.movementEntries?.[movement.id]
-  const savedEntry = appState.savedWorkouts?.[workout.id]?.movementEntries?.[movement.id]
+  const savedEntry =
+    getLatestSavedWorkoutSession(appState, workout)?.movementEntries?.[movement.id]
   const fallbackEntry = buildEmptyMovementEntry(movement)
   const sourceEntry = draftEntry ?? savedEntry
 
@@ -435,7 +441,7 @@ function updateMovementEntry(state, workout, movementId, nextEntry) {
   )
 }
 
-function saveWorkout(state, workout) {
+function saveWorkout(state, workout, activePhase, currentWeek) {
   const movementEntries = Object.fromEntries(
     workout.movements.map((movement) => [
       movement.id,
@@ -444,11 +450,29 @@ function saveWorkout(state, workout) {
   )
 
   const completedAt = new Date().toISOString()
-  const savedWorkout = {
+  const savedWorkoutSession = {
+    id: createSavedWorkoutSessionId(workout.id, completedAt),
+    programId: state.program.id,
+    programInstanceId: state.program.instanceId,
+    phaseId: activePhase?.id ?? null,
+    phaseName: activePhase?.name ?? null,
+    weekId: currentWeek?.id ?? null,
+    weekLabel: currentWeek?.label ?? null,
     workoutId: workout.id,
     workoutTitle: workout.title,
     completedAt,
     movementEntries,
+    movementSnapshots: Object.fromEntries(
+      workout.movements.map((movement) => [
+        movement.id,
+        {
+          movementId: movement.id,
+          title: movement.title,
+          block: movement.block ?? '',
+          historyKey: createMovementHistoryKey(movement),
+        },
+      ]),
+    ),
   }
 
   const nextState = {
@@ -456,13 +480,46 @@ function saveWorkout(state, workout) {
     workoutDrafts: Object.fromEntries(
       Object.entries(state.workoutDrafts ?? {}).filter(([workoutId]) => workoutId !== workout.id),
     ),
-    savedWorkouts: {
-      ...state.savedWorkouts,
-      [workout.id]: savedWorkout,
-    },
+    savedWorkoutSessions: [...(state.savedWorkoutSessions ?? []), savedWorkoutSession],
   }
 
   return updateWorkoutStatus(nextState, workout.id, 'complete')
+}
+
+function getLatestSavedWorkoutSession(appState, workout) {
+  const savedSessions = (appState.savedWorkoutSessions ?? []).filter(
+    (session) =>
+      session.programInstanceId === appState.program.instanceId && session.workoutId === workout.id,
+  )
+
+  if (!savedSessions.length) {
+    return null
+  }
+
+  return savedSessions.reduce((latestSession, currentSession) =>
+    new Date(currentSession.completedAt).getTime() > new Date(latestSession.completedAt).getTime()
+      ? currentSession
+      : latestSession,
+  )
+}
+
+function createSavedWorkoutSessionId(workoutId, completedAt) {
+  const safeWorkoutId = String(workoutId)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  const safeTimestamp = completedAt.replace(/[^0-9]/g, '')
+
+  return `${safeWorkoutId || 'workout'}-${safeTimestamp}-${Date.now()}`
+}
+
+function createMovementHistoryKey(movement) {
+  return String(movement?.title ?? '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 function sanitizeDecimalInput(value) {
@@ -474,6 +531,18 @@ function sanitizeDecimalInput(value) {
 
 function sanitizeIntegerInput(value) {
   return value.replace(/\D/g, '')
+}
+
+function getWorkoutStatusVariant(status) {
+  if (status === 'complete') {
+    return 'success'
+  }
+
+  if (status === 'in progress') {
+    return 'default'
+  }
+
+  return 'muted'
 }
 
 function validateProgramUpload(program) {

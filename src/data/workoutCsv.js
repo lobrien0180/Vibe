@@ -32,11 +32,33 @@ export function parseWorkoutCsv(raw, options = {}) {
         headers.map((header, index) => [header, row[index]?.trim() ?? '']),
       )
 
-      if (!record.phase || !record['phase weeks'] || !record['workout name'] || !record['movement/ exercise']) {
+      if (
+        !record.phase ||
+        !record['phase weeks'] ||
+        !record['workout name'] ||
+        !record['movement/ exercise']
+      ) {
         throw new Error(`CSV row ${rowIndex + 2} is missing a required value.`)
       }
 
-      return record
+      const durationWeeks = parsePositiveInteger(record['phase weeks'])
+
+      if (!durationWeeks) {
+        throw new Error(`CSV row ${rowIndex + 2} has an invalid Phase weeks value.`)
+      }
+
+      const sets = parsePositiveInteger(record.sets)
+
+      if (!sets) {
+        throw new Error(`CSV row ${rowIndex + 2} has an invalid Sets value.`)
+      }
+
+      return {
+        ...record,
+        durationWeeks,
+        sets,
+        sourceRow: rowIndex + 2,
+      }
     })
 
   if (!entries.length) {
@@ -54,29 +76,25 @@ export function parseWorkoutCsv(raw, options = {}) {
         id: phaseKey,
         phaseNumber,
         name: `Phase ${phaseNumber}`,
-        weeks: new Map(),
-      })
-    }
-
-    const phase = phaseMap.get(phaseKey)
-    const weekNumber = entry['phase weeks']
-    const weekKey = `${phaseKey}-week-${weekNumber}`
-
-    if (!phase.weeks.has(weekKey)) {
-      phase.weeks.set(weekKey, {
-        id: weekKey,
-        label: `Week ${weekNumber}`,
+        durationWeeks: entry.durationWeeks,
         workouts: new Map(),
       })
     }
 
-    const week = phase.weeks.get(weekKey)
-    const workoutName = entry['workout name']
-    const workoutKey = `${weekKey}-${slugify(workoutName)}`
+    const phase = phaseMap.get(phaseKey)
 
-    if (!week.workouts.has(workoutKey)) {
-      week.workouts.set(workoutKey, {
-        id: workoutKey,
+    if (phase.durationWeeks !== entry.durationWeeks) {
+      throw new Error(
+        `Phase ${phaseNumber} has inconsistent Phase weeks values. Check row ${entry.sourceRow}.`,
+      )
+    }
+
+    const workoutName = entry['workout name']
+    const workoutKey = `${phaseKey}-${slugify(workoutName)}`
+
+    if (!phase.workouts.has(workoutKey)) {
+      phase.workouts.set(workoutKey, {
+        templateKey: workoutKey,
         dayLabel: '',
         title: workoutName,
         status: 'not started',
@@ -85,16 +103,16 @@ export function parseWorkoutCsv(raw, options = {}) {
       })
     }
 
-    const workout = week.workouts.get(workoutKey)
+    const workout = phase.workouts.get(workoutKey)
 
     workout.movements.push({
-      id: `${workoutKey}-${slugify(entry['movement/ exercise'])}`,
+      templateKey: `${workoutKey}-movement-${workout.movements.length + 1}`,
       block: entry.block || '',
       title: entry['movement/ exercise'],
       category: '',
       coachNote: '',
       prescription: {
-        sets: Number(entry.sets || 1),
+        sets: entry.sets,
         reps: String(entry.reps || ''),
         tempo: entry.tempo || '',
         rest: entry.rest || '',
@@ -104,20 +122,12 @@ export function parseWorkoutCsv(raw, options = {}) {
   }
 
   const phases = Array.from(phaseMap.values())
-    .sort((left, right) => Number(left.phaseNumber) - Number(right.phaseNumber))
-    .map((phase) => ({
-      id: phase.id,
-      name: phase.name,
-      startDate: null,
-      weeks: Array.from(phase.weeks.values()).map((week) => ({
-        id: week.id,
-        label: week.label,
-        startDate: null,
-        workouts: Array.from(week.workouts.values()),
-      })),
-    }))
+    .sort((left, right) => comparePhaseNumbers(left.phaseNumber, right.phaseNumber))
+    .map((phase) => buildPhase(phase))
 
-  const targetPhaseNumber = String(options.activePhaseNumber ?? phases[0]?.name.replace('Phase ', '') ?? '1')
+  const targetPhaseNumber = String(
+    options.activePhaseNumber ?? phases[0]?.name.replace('Phase ', '') ?? '1',
+  )
   const activePhaseId =
     phases.find((phase) => phase.name === `Phase ${targetPhaseNumber}`)?.id ?? phases[0]?.id ?? null
 
@@ -126,6 +136,66 @@ export function parseWorkoutCsv(raw, options = {}) {
     name: options.programName ?? stripExtension(options.fileName ?? 'Workout Program'),
     activePhaseId,
     phases,
+  }
+}
+
+function buildPhase(phase) {
+  const workoutTemplates = Array.from(phase.workouts.values())
+
+  return {
+    id: phase.id,
+    name: phase.name,
+    durationWeeks: phase.durationWeeks,
+    startDate: null,
+    weeks: Array.from({ length: phase.durationWeeks }, (_, weekIndex) =>
+      buildWeek(phase, workoutTemplates, weekIndex),
+    ),
+  }
+}
+
+function buildWeek(phase, workoutTemplates, weekIndex) {
+  return {
+    id: `${phase.id}-week-${weekIndex + 1}`,
+    label: `Week ${weekIndex + 1}`,
+    startDate: null,
+    workouts: workoutTemplates.map((workout, workoutIndex) =>
+      buildWorkout(phase, weekIndex, workout, workoutIndex),
+    ),
+  }
+}
+
+function buildWorkout(phase, weekIndex, workout, workoutIndex) {
+  const workoutSlug = slugify(workout.title) || `workout-${workoutIndex + 1}`
+  const workoutId = `${phase.id}-week-${weekIndex + 1}-${workoutSlug}-${workoutIndex + 1}`
+
+  return {
+    id: workoutId,
+    dayLabel: workout.dayLabel ?? '',
+    title: workout.title,
+    status: 'not started',
+    durationEstimate: workout.durationEstimate ?? '',
+    movements: workout.movements.map((movement, movementIndex) =>
+      buildMovement(workoutId, movement, movementIndex),
+    ),
+  }
+}
+
+function buildMovement(workoutId, movement, movementIndex) {
+  const movementSlug = slugify(movement.title) || `movement-${movementIndex + 1}`
+
+  return {
+    id: `${workoutId}-${movementSlug}-${movementIndex + 1}`,
+    block: movement.block || '',
+    title: movement.title,
+    category: movement.category ?? '',
+    coachNote: movement.coachNote ?? '',
+    prescription: {
+      sets: movement.prescription.sets,
+      reps: String(movement.prescription.reps || ''),
+      tempo: movement.prescription.tempo || '',
+      rest: movement.prescription.rest || '',
+    },
+    previousPerformance: [],
   }
 }
 
@@ -179,6 +249,15 @@ function parseCsvRows(raw) {
 
 function normalizeHeader(value) {
   return String(value).replace(/^\uFEFF/, '').trim().toLowerCase()
+}
+
+function parsePositiveInteger(value) {
+  const parsed = Number.parseInt(String(value).trim(), 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function comparePhaseNumbers(left, right) {
+  return String(left).localeCompare(String(right), undefined, { numeric: true })
 }
 
 function slugify(value) {

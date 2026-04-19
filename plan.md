@@ -2,225 +2,263 @@
 
 ## Goal
 
-Build a simple mobile-first fitness tracking app focused on completing the current week's workouts, recording weights and notes during a session, and managing a rolling weekly program with a fast, reliable, touch-friendly interface.
+Align the app with the product rules in `AGENTS.md`, with the highest priority on correct program scheduling, reliable workout state, and phase-specific exercise history.
 
-## Guiding Principles
+## Source of Truth
 
-- Start with the smallest usable workflow: view this week's workouts, open a workout, record results, and save it.
-- Keep the initial product to 2 screens: `Homepage` and `Current Workout`.
-- Design for mobile first, then scale up for larger screens.
-- Prioritize large tap targets, basic cards, thumb-friendly spacing, and the requested light grey / bright pink visual style.
-- Optimize the workout flow for fast in-gym use with minimal typing and minimal navigation depth.
-- Treat interruptions as normal mobile behavior, so in-progress state should be resilient.
-- Treat program uploads as a full replacement of the active program data.
-- Design the data model early so weekly rollover, history, and future export work can be added without rework.
+- `AGENTS.md` is the product source of truth.
+- This plan replaces the earlier roadmap in this file where it conflicts with `AGENTS.md`.
 
-## Phase 1: Foundations and App Skeleton
+## Current State Summary
 
-### Objective
+The app already has a strong UI foundation:
 
-Create the mobile-first app shell, navigation model, and base data structures needed for all later phases.
+- A homepage
+- A workout detail page
+- A separate upload program page
+- Local draft and saved workout persistence
+- CSV upload support
+- Mobile-friendly workout inputs
 
-### Scope
+The biggest implementation gaps are in the data model and rule handling:
 
-- Define the core entities:
-  - Program
-  - Program phase
-  - Week
-  - Workout
-  - Movement
-  - Movement prescription details: sets, reps, tempo
-  - Logged set: weight and notes
-  - Saved workout session
-- Set up the 2-screen structure:
-  - Homepage showing current week workouts
-  - Current Workout screen for viewing and logging a selected workout
-- Create a simple mobile-first design system:
-  - Light grey background
-  - Bright pink accent color
-  - Card-based layout
-  - Large buttons and touch-friendly spacing
-  - Clear typography for small screens
-  - Sticky primary actions where useful
-- Define responsive behavior from the start:
-  - Primary target is phone screens
-  - Tablet and desktop should remain usable but secondary
-- Decide storage approach for MVP:
-  - Local persistence first is fastest for MVP
-  - Keep the data layer abstract so a backend can be added later
-  - Prefer an approach that can support draft recovery and offline-friendly behavior later
+- `Phase weeks` is currently interpreted incorrectly
+- Monday-based scheduling is not implemented
+- Phase progression is not derived from date offset across the full program
+- Uploading a new program can incorrectly restore `complete` status from matching workout IDs
+- Exercise history is not derived from saved workouts
+- Saved workout history is not modeled as true historical sessions
 
-### Deliverables
+## Principles
 
-- Working app shell
-- Reusable UI components
-- Data schema / TypeScript interfaces or equivalent models
-- Persistence strategy selected and wired in
-- Mobile layout and interaction patterns established
+- Fix rule correctness before adding polish
+- Treat scheduling and state modeling as the foundation for the rest of the app
+- Keep upload behavior simple and predictable
+- Preserve saved history across uploads
+- Keep drafts local to the active scheduled workout
+- Add tests around every rule-heavy behavior
 
-## Phase 2: MVP Workout Viewing
+## Phase 1: Rebuild Program and Scheduling Model
 
 ### Objective
 
-Enable users to see the current week's workouts and inspect workout structure in a mobile-friendly way without starting the workout flow.
+Create a program model that matches the `Program -> Phase -> Week -> Workout Name -> Movement` hierarchy and supports calendar-driven progression.
 
 ### Scope
 
-- Homepage shows all workouts for the current week
-- Each workout shows its completion status
-- Users can open a workout and review all movements
-- Movement list shows titles only on the main workout overview
-- Users can exit a workout and return to the homepage without saving progress
-- Keep scrolling and tap depth low on small screens
-- Add support for viewing detailed movement info when selected:
-  - Number of sets
-  - Number of reps
-  - Tempo
-- Previous weights and notes for the current program phase are available on demand and hidden by default until selected
+- Add program instance metadata for uploaded programs:
+  - `uploadedAt`
+  - `programStartDate`
+- Implement the scheduling rules:
+  - Each week starts on Monday
+  - Each week ends on Sunday
+  - If upload happens on Monday, week 1 starts that day
+  - Otherwise, week 1 starts on the next Monday
+  - Weeks advance every Monday even if workouts are incomplete
+  - Phases advance successively with no gaps
+- Derive the current phase and current week from date offset across the entire program, not from a fixed `activePhaseId`
+- Make the program model resilient to repeated workout names across multiple weeks and phases
 
 ### Deliverables
 
-- Current week homepage
-- Workout detail screen
-- Expandable or selectable movement detail view
-- Completion status display
-- Mobile-validated viewing flow on common phone dimensions
+- Updated program state shape
+- Date utilities for Monday-based scheduling
+- Derived selectors for:
+  - current phase
+  - current week
+  - homepage subtitle labels
+  - scheduled workout occurrence identity
 
-## Phase 3: MVP Workout Logging
+## Phase 2: Fix CSV Parsing and Program Construction
 
 ### Objective
 
-Allow users to complete a workout and save results quickly on mobile.
+Make CSV upload behavior match the format and interpretation rules in `AGENTS.md`.
 
 ### Scope
 
-- Add weight entry for each set of a movement
-- Add notes entry for each movement
-- Use mobile-friendly inputs:
-  - Numeric keypad-friendly weight entry
-  - Large touch targets for set logging
-  - Minimal typing where possible
-- Save the workout when finished
-- Mark workout status as complete once saved
-- Preserve saved workout results for later viewing
-- Handle partial progress safely during an in-progress workout session
-- Consider autosave or draft recovery as part of the logging flow, even if lightweight in MVP
+- Parse `Phase` as the phase number
+- Parse `Phase weeks` as the duration of that phase
+- Build one phase template per phase number
+- Group workouts by `Workout Name` within each phase
+- Group movements under each workout using `Block` and `Movement/ Exercise`
+- Generate scheduled weeks by repeating the same workout structure for the configured number of weeks in that phase
+- Preserve the expected headers:
+  - `Phase`
+  - `Phase weeks`
+  - `Workout Name`
+  - `Block`
+  - `Movement/ Exercise`
+  - `Sets`
+  - `Reps`
+  - `Tempo`
+  - `Rest`
+- Strengthen upload validation and user-facing errors
 
 ### Deliverables
 
-- Full workout logging flow
-- Saved workout records
-- Complete / incomplete workout states
-- Mobile-friendly data entry flow
+- Correct CSV parser behavior
+- Program builder that produces phase templates plus scheduled week instances
+- Better upload validation messages
 
-## Phase 4: Program Upload and Weekly Scheduling
+## Phase 3: Separate Drafts, Active State, and Saved History
 
 ### Objective
 
-Support loading a training program and generating the active training week structure in a way that works well for mobile users.
+Make workout status and persistence behavior match the product rules exactly.
 
 ### Scope
 
-- Build file upload flow for program / program phase data
-- Uploaded program replaces all previous active program data
-- Generate workouts for the current week from the uploaded program
-- Implement week rollover logic so each week's workouts roll into the next week
-- Ensure saved workouts remain historically accessible even if active program data changes
-- Decide whether program upload is a mobile-only flow, a desktop-assisted flow, or both
+- Keep drafts stored locally per scheduled workout occurrence
+- Keep saved workouts separate from drafts
+- Model saved workouts as append-only historical sessions, not a single record keyed only by `workout.id`
+- Ensure the first edit to any workout field changes status to `in progress`
+- Ensure saving a workout changes status to `complete`
+- Ensure simply opening a workout does not change status
+- Ensure uploading a new program:
+  - replaces the active program
+  - clears drafts
+  - does not wipe saved workout history
+  - does not automatically mark matching workouts as complete
+- Remove any status restoration logic that depends only on matching workout IDs
 
 ### Deliverables
 
-- Program upload feature
-- Program replacement logic
-- Weekly workout generation
-- Automatic week rollover rules
-- Clear mobile behavior for program management
+- Revised draft storage model
+- Revised saved history model
+- Correct workout status transitions
+- Correct upload replacement behavior
 
-## Phase 5: History and Progress Context
+## Phase 4: Implement Phase-Specific Exercise History
 
 ### Objective
 
-Make the app more useful for repeat training by surfacing prior performance context.
+Show real movement history based on saved workouts, scoped to the current phase of the current program.
 
 ### Scope
 
-- Show previous weights and notes for the current program phase in a cleaner history view
-- Add saved workout review flow from earlier sessions
-- Improve progression context for each movement so users can compare current and prior performance
-- Add filters or grouping by week / workout if needed
-- Keep historical context collapsible so the workout screen stays uncluttered on mobile
+- Derive movement history from saved workout sessions rather than embedded program data
+- Match movements by phase-aware workout context plus movement identity
+- Filter history to:
+  - the current program instance
+  - the current phase
+- Show all available history for an exercise whenever that exercise is displayed
+- Keep the current expandable history UI, but back it with derived data
+- Make sure new uploads preserve old history for historical review without contaminating the active program state
 
 ### Deliverables
 
-- Workout history access
-- Previous performance context
-- Better review experience for saved sessions
+- History selectors/utilities
+- Workout screen connected to real saved history
+- Clear handling of empty history states
 
-## Phase 6: Nice-to-Haves and Hardening
+## Phase 5: Update UI Labels and State Mapping
 
 ### Objective
 
-Finish lower-priority features and prepare the app for broader use.
+Make sure the interface reflects the corrected data model and `AGENTS.md` labels consistently.
 
 ### Scope
 
-- Export saved workouts
-- Improve validation and empty states
-- Add loading, error, and success feedback
-- Add mobile hardening:
-  - Better performance on slower devices
-  - Smooth resume after app/tab interruption
-  - Optional PWA support if we want an app-like experience
-- Improve accessibility:
-  - Button size
-  - Contrast
-  - Screen reader labels
-- Add tests for critical flows:
-  - Upload program
-  - View current week
-  - Log workout
-  - Save workout
-  - Week rollover
-  - Resume interrupted workout session
+- Keep homepage heading as `Workout Plan`
+- Keep the homepage subtitle as dynamic phase and week labels
+- Keep workout cards centered on `Workout Name`
+- Keep upload action visually secondary
+- Keep workout page heading as `Workout Name`
+- Keep week heading as the current week label
+- Keep movement heading format as `Block) Movement/ Exercise`
+- Keep weight and reps as user-entered only
+- Keep programmed reps as placeholder guidance
+- Preserve movement title wrapping and stable sets pill layout
+- Update any UI text that still reflects old scheduling assumptions
 
 ### Deliverables
 
-- Export capability
-- Stronger UX polish
-- Basic automated test coverage
+- UI aligned with corrected scheduling and status data
+- No label mismatches against `AGENTS.md`
 
-## Suggested Delivery Order
+## Phase 6: Storage Migration and Hardening
 
-1. Phase 1: foundations
-2. Phase 2: workout viewing MVP
-3. Phase 3: workout logging MVP
-4. Phase 4: program upload and weekly generation
-5. Phase 5: history and progress context
-6. Phase 6: export and hardening
+### Objective
 
-## MVP Definition
+Prevent existing local data from breaking once the model changes.
 
-The MVP should include:
+### Scope
 
-- Homepage with all workouts for the current week
-- Workout titles and completion status
-- Ability to open and review a workout
-- Movement detail view with sets, reps, and tempo
-- Weight logging per set
-- Notes per movement
-- Save completed workout
-- Program upload that replaces existing program data
-- Program-generated workouts for the current week
-- Weekly rollover to the next week
-- Mobile-first layout and touch-friendly workout logging
+- Version the stored app state
+- Add migration or safe reset behavior for outdated local data
+- Ensure old draft/status structures do not corrupt the new scheduling model
+- Confirm saved historical sessions remain readable after migration where feasible
 
-## Risks and Decisions to Confirm Later
+### Deliverables
 
-- File format for uploaded programs: CSV, JSON, or spreadsheet import
-- Whether workout progress should autosave before final completion
-- Whether history should be stored locally or synced to a backend
-- How to define weekly rollover timing: calendar week, training week, or user-controlled reset
-- Whether workout edits are allowed after a workout is marked complete
-- Whether this should remain a mobile web app or become a PWA
-- Whether the app must support offline workout logging during gym sessions
-- Whether program upload is expected to happen on phone, desktop, or both
+- Updated storage versioning
+- Migration or fallback reset strategy
+- Safer local persistence behavior
+
+## Phase 7: Test Coverage for Product Rules
+
+### Objective
+
+Add automated confidence around the rules most likely to regress.
+
+### Scope
+
+- CSV parsing tests
+- Scheduling tests:
+  - upload on Monday
+  - upload on non-Monday
+  - Monday rollover
+  - phase rollover after configured week counts
+- Workout status tests:
+  - open does not change status
+  - first edit sets `in progress`
+  - save sets `complete`
+- Upload replacement tests:
+  - clears drafts
+  - preserves saved history
+  - does not restore `complete` based on matching IDs
+- Exercise history tests:
+  - history is phase-specific
+  - history is program-instance aware
+
+### Deliverables
+
+- Automated coverage for the core rule set
+- Safer refactoring path for future changes
+
+## Recommended Delivery Order
+
+1. Rebuild the scheduling model
+2. Fix CSV parsing and program construction
+3. Separate drafts, status, and saved history
+4. Implement derived phase-specific exercise history
+5. Update UI bindings and labels
+6. Add storage migration handling
+7. Add automated tests and final cleanup
+
+## Acceptance Criteria
+
+The implementation is ready when all of the following are true:
+
+- Uploading a CSV creates a program whose weeks begin on the correct Monday
+- The app automatically advances to the next week every Monday
+- The app automatically advances phases after the configured number of weeks
+- `Phase weeks` controls phase duration rather than the current week label
+- A phase repeats the same workouts for its configured week count
+- Opening a workout leaves it as `not started`
+- Editing any field changes it to `in progress`
+- Saving a workout changes it to `complete`
+- Uploading a new program clears drafts but preserves saved history
+- Uploading a new program does not mark workouts complete because IDs match
+- Exercise history shown in the workout screen comes from saved sessions in the current phase of the current program
+
+## Out of Scope for This Plan
+
+- Backend sync
+- User accounts
+- Export features
+- PWA/offline packaging
+- Broader analytics and progress dashboards
+
+These can be planned after the rules in `AGENTS.md` are fully implemented and stable.
