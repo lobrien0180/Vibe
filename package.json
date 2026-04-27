@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "cert:https": "sh ./scripts/create-dev-cert.sh",
+    "dev:https": "bun run cert:https && VIBE_HTTPS=true vite --host 0.0.0.0",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

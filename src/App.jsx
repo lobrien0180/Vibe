@@ -37,9 +37,7 @@ function App() {
     saveAppState(appState)
   }, [appState])
 
-  const previewWeekOffset = appState.storage?.previewWeekOffset ?? 0
-  const actualCurrentWeek = getCurrentWeek(appState)
-  const referenceDate = getPreviewReferenceDate(actualCurrentWeek, previewWeekOffset)
+  const referenceDate = new Date()
   const { activePhase, phaseLabel, weekLabel } = getProgramSummary(appState, referenceDate)
   const currentWeek = getCurrentWeek(appState, referenceDate)
   const selectedWorkout =
@@ -94,14 +92,9 @@ function App() {
             currentWeek={currentWeek}
             phaseLabel={phaseLabel}
             weekLabel={weekLabel}
-            previewWeekOffset={previewWeekOffset}
             referenceDate={referenceDate}
             onOpenWorkout={handleOpenWorkout}
             onOpenUpload={() => setCurrentScreen('upload')}
-            onAdvanceWeek={() =>
-              setAppState((current) => updatePreviewWeekOffset(current, previewWeekOffset + 1))
-            }
-            onResetPreview={() => setAppState((current) => updatePreviewWeekOffset(current, 0))}
             onExportWorkouts={() => handleExportWorkouts(appState, referenceDate)}
           />
         ) : currentScreen === 'upload' ? (
@@ -141,13 +134,10 @@ function HomeScreen({
   currentWeek,
   phaseLabel,
   weekLabel,
-  previewWeekOffset,
   referenceDate,
   onOpenWorkout,
   onOpenUpload,
-  onAdvanceWeek,
   onExportWorkouts,
-  onResetPreview,
 }) {
   const hasWeeksToExport =
     getScheduledWeeksThroughCurrentWeek(appState, referenceDate).length > 0 &&
@@ -158,24 +148,6 @@ function HomeScreen({
       <ScreenHeader title="Workout Plan" subtitle={`${phaseLabel} · ${weekLabel}`} />
 
       <section className="stack">
-        <Card
-          title="Schedule Preview"
-          subtitle={
-            previewWeekOffset
-              ? `Previewing ${formatPreviewOffset(previewWeekOffset)} from today so you can inspect future history.`
-              : 'Move forward a week locally to inspect how next week and exercise history will look.'
-          }
-        >
-          <div className="preview-controls">
-            <Button variant="ghost" onClick={onAdvanceWeek}>
-              Next Week
-            </Button>
-            <Button disabled={!previewWeekOffset} onClick={onResetPreview}>
-              Reset to Today
-            </Button>
-          </div>
-        </Card>
-
         <Card title="This Week's Workouts">
           {currentWeek?.workouts?.length ? (
             <div className="workout-list" role="list">
@@ -217,6 +189,8 @@ function HomeScreen({
 }
 
 function UploadProgramScreen({ uploadState, onBack, onUploadProgram }) {
+  const sampleUploadUrl = `${import.meta.env.BASE_URL}sample-program-upload.csv`
+
   return (
     <>
       <ScreenHeader title="Upload Program" subtitle="Replace the active plan with a CSV file" />
@@ -230,7 +204,7 @@ function UploadProgramScreen({ uploadState, onBack, onUploadProgram }) {
             </label>
             <p className="upload-helper">
               Need a template? Use{' '}
-              <a href="/sample-program-upload.csv" target="_blank" rel="noreferrer">
+              <a href={sampleUploadUrl} target="_blank" rel="noreferrer">
                 the sample upload file
               </a>
               .
@@ -703,30 +677,6 @@ function downloadCsvFile(csv, fileName) {
   link.click()
   link.remove()
   window.URL.revokeObjectURL(url)
-}
-
-function updatePreviewWeekOffset(state, previewWeekOffset) {
-  return {
-    ...state,
-    storage: {
-      ...state.storage,
-      previewWeekOffset: Math.max(0, previewWeekOffset),
-    },
-  }
-}
-
-function getPreviewReferenceDate(baseWeek, previewWeekOffset) {
-  if (!previewWeekOffset || !baseWeek?.startDate) {
-    return new Date()
-  }
-
-  const date = new Date(`${baseWeek.startDate}T12:00:00`)
-  date.setDate(date.getDate() + Math.max(0, previewWeekOffset) * 7)
-  return date
-}
-
-function formatPreviewOffset(previewWeekOffset) {
-  return previewWeekOffset === 1 ? '1 week ahead' : `${previewWeekOffset} weeks ahead`
 }
 
 function validateProgramUpload(program) {
