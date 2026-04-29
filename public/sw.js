@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'vibe-shell-v1'
-const RUNTIME_CACHE = 'vibe-runtime-v1'
+const SHELL_CACHE = 'vibe-shell-v2'
+const RUNTIME_CACHE = 'vibe-runtime-v2'
 const APP_BASE_PATH = self.location.pathname.replace(/[^/]+$/, '')
 const APP_SHELL_URLS = [
   '',
