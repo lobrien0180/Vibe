@@ -289,11 +289,6 @@ function WorkoutScreen({
 
                         <div className="set-row-grid">
                           <label className="set-field">
-                            <span>Rest</span>
-                            <input readOnly type="text" value={movement.prescription.rest} />
-                          </label>
-
-                          <label className="set-field">
                             <span>Weight</span>
                             <input
                               autoComplete="off"
@@ -335,6 +330,14 @@ function WorkoutScreen({
                                   ),
                                 })
                               }
+                            />
+                          </label>
+
+                          <label className="set-field">
+                            <span>Rest</span>
+                            <RestTimerButton
+                              key={movement.prescription.rest}
+                              restValue={movement.prescription.rest}
                             />
                           </label>
                         </div>
@@ -414,6 +417,74 @@ function WorkoutScreen({
         <Button onClick={onSaveWorkout}>Save Workout</Button>
       </div>
     </>
+  )
+}
+
+function RestTimerButton({ restValue }) {
+  const initialSeconds = parseRestDurationSeconds(restValue)
+  const [timer, setTimer] = useState({
+    status: 'idle',
+    remainingSeconds: initialSeconds ?? 0,
+  })
+  const canRunTimer = initialSeconds !== null
+
+  useEffect(() => {
+    if (timer.status !== 'running') {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTimer((currentTimer) => {
+        if (currentTimer.status !== 'running') {
+          return currentTimer
+        }
+
+        const nextRemainingSeconds = Math.max(currentTimer.remainingSeconds - 1, 0)
+
+        return {
+          status: nextRemainingSeconds === 0 ? 'done' : 'running',
+          remainingSeconds: nextRemainingSeconds,
+        }
+      })
+    }, 1000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [timer.status, timer.remainingSeconds])
+
+  function handleTimerClick() {
+    if (!canRunTimer) {
+      return
+    }
+
+    if (timer.status === 'running' || timer.status === 'done') {
+      setTimer({
+        status: 'idle',
+        remainingSeconds: initialSeconds,
+      })
+      return
+    }
+
+    setTimer({
+      status: 'running',
+      remainingSeconds: initialSeconds,
+    })
+  }
+
+  const timerLabel =
+    timer.status === 'running' || timer.status === 'done'
+      ? formatRestDuration(timer.remainingSeconds)
+      : String(restValue || 'Rest')
+
+  return (
+    <button
+      aria-label={`Rest timer ${timerLabel}`}
+      className={`rest-timer-button rest-timer-button-${timer.status}`}
+      disabled={!canRunTimer}
+      type="button"
+      onClick={handleTimerClick}
+    >
+      {timerLabel}
+    </button>
   )
 }
 
@@ -554,6 +625,44 @@ function sanitizeDecimalInput(value) {
 
 function sanitizeIntegerInput(value) {
   return value.replace(/\D/g, '')
+}
+
+function parseRestDurationSeconds(value) {
+  const restValue = String(value ?? '').trim().toLowerCase()
+
+  if (!restValue) {
+    return null
+  }
+
+  const clockMatch = restValue.match(/^(\d+):([0-5]?\d)$/)
+
+  if (clockMatch) {
+    return Number(clockMatch[1]) * 60 + Number(clockMatch[2])
+  }
+
+  const minutesMatch = restValue.match(/^(\d+(?:\.\d+)?)\s*(m|min|mins|minute|minutes)$/)
+
+  if (minutesMatch) {
+    return Math.round(Number(minutesMatch[1]) * 60)
+  }
+
+  const secondsMatch = restValue.match(/^(\d+(?:\.\d+)?)\s*(s|sec|secs|second|seconds)$/)
+
+  if (secondsMatch) {
+    return Math.round(Number(secondsMatch[1]))
+  }
+
+  const numericSeconds = Number(restValue)
+
+  return Number.isFinite(numericSeconds) && numericSeconds >= 0 ? Math.round(numericSeconds) : null
+}
+
+function formatRestDuration(totalSeconds) {
+  const safeSeconds = Math.max(0, Number(totalSeconds) || 0)
+  const minutes = Math.floor(safeSeconds / 60)
+  const seconds = String(safeSeconds % 60).padStart(2, '0')
+
+  return `${minutes}:${seconds}`
 }
 
 function getWorkoutStatusVariant(status) {

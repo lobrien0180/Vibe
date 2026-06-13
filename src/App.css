@@ -337,7 +337,8 @@
 }
 
 .set-field input,
-.notes-field textarea {
+.notes-field textarea,
+.rest-timer-button {
   width: 100%;
   border: 1px solid #dbe1ea;
   border-radius: 1rem;
@@ -349,6 +350,31 @@
 .set-field input {
   min-height: 2.7rem;
   padding: 0.7rem 0.85rem;
+}
+
+.rest-timer-button {
+  min-height: 2.7rem;
+  padding: 0.7rem 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rest-timer-button-running {
+  border-color: #f72585;
+  background: #fff7fb;
+  color: #be185d;
+}
+
+.rest-timer-button-done {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.rest-timer-button:disabled {
+  cursor: not-allowed;
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 .set-field input[readonly] {
@@ -363,7 +389,8 @@
 }
 
 .set-field input:focus,
-.notes-field textarea:focus {
+.notes-field textarea:focus,
+.rest-timer-button:focus {
   outline: 2px solid rgba(247, 37, 133, 0.25);
   border-color: #f72585;
 }
