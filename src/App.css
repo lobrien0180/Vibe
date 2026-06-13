@@ -355,19 +355,43 @@
 .rest-timer-button {
   min-height: 2.7rem;
   padding: 0.7rem 0.85rem;
+  border-color: #94a3b8;
+  background: linear-gradient(180deg, #ffffff, #eef2f7);
+  color: #1f2937;
   font-weight: 800;
   cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 2px 5px rgba(15, 23, 42, 0.1);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.rest-timer-button:hover {
+  border-color: #64748b;
+  background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 3px 8px rgba(15, 23, 42, 0.14);
+}
+
+.rest-timer-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12) inset;
 }
 
 .rest-timer-button-running {
-  border-color: #f72585;
-  background: #fff7fb;
-  color: #be185d;
+  border-color: #64748b;
+  background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+  color: #1f2937;
 }
 
 .rest-timer-button-done {
   border-color: #16a34a;
-  background: #f0fdf4;
+  background: linear-gradient(180deg, #f0fdf4, #dcfce7);
   color: #166534;
 }
 
@@ -393,6 +417,11 @@
 .rest-timer-button:focus {
   outline: 2px solid rgba(247, 37, 133, 0.25);
   border-color: #f72585;
+}
+
+.rest-timer-button:focus {
+  outline-color: rgba(100, 116, 139, 0.25);
+  border-color: #64748b;
 }
 
 .history-accordion {
